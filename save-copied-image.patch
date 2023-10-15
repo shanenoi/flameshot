@@ -1,0 +1,88 @@
+From 11eff600594fca09411dd522dc2d61d2a07e4d10 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Sh=C3=A1nenoi?= <shanenoi.org@gmail.com>
+Date: Sun, 15 Oct 2023 12:11:44 +0700
+Subject: [PATCH] enable auto save the copied images to temporary director
+
+---
+ src/core/flameshot.cpp | 1 +
+ src/main.cpp           | 7 +++++++
+ src/utils/pathinfo.cpp | 6 ++++++
+ src/utils/pathinfo.h   | 2 ++
+ 4 files changed, 16 insertions(+)
+
+diff --git a/src/core/flameshot.cpp b/src/core/flameshot.cpp
+index 54b0ada4..51dd7337 100644
+--- a/src/core/flameshot.cpp
++++ b/src/core/flameshot.cpp
+@@ -371,6 +371,7 @@ void Flameshot::exportCapture(const QPixmap& capture,
+ 
+     if (tasks & CR::COPY) {
+         FlameshotDaemon::copyToClipboard(capture);
++        saveToFilesystem(capture, QString(PathInfo::tempDirectory()));
+     }
+ 
+     if (tasks & CR::PIN) {
+diff --git a/src/main.cpp b/src/main.cpp
+index 23d3157e..72b7592e 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -8,6 +8,7 @@
+ #endif
+ 
+ #include "abstractlogger.h"
++#include <sys/stat.h>
+ #include "src/cli/commandlineparser.h"
+ #include "src/config/cacheutils.h"
+ #include "src/config/styleoverride.h"
+@@ -43,6 +44,10 @@ void wayland_hacks()
+         qputenv("QT_QPA_PLATFORM", "xcb");
+     }
+ }
++
++void setup_temp_dir() {
++    mkdir(PathInfo::tempDirectory(), S_IRWXU | S_IRWXG | S_IRWXO);
++}
+ #endif
+ 
+ void requestCaptureAndWait(const CaptureRequest& req)
+@@ -128,6 +133,7 @@ int main(int argc, char* argv[])
+ {
+ #ifdef Q_OS_LINUX
+     wayland_hacks();
++    setup_temp_dir();
+ #endif
+ 
+     // required for the button serialization
+@@ -579,3 +585,4 @@ finish:
+ #endif
+     return 0;
+ }
++
+diff --git a/src/utils/pathinfo.cpp b/src/utils/pathinfo.cpp
+index ea3faf67..30b34694 100644
+--- a/src/utils/pathinfo.cpp
++++ b/src/utils/pathinfo.cpp
+@@ -29,3 +29,9 @@ QStringList PathInfo::translationsPaths()
+ #endif
+     return QStringList() << trPath;
+ }
++
++const char* PathInfo::tempDirectory()
++{
++    return "/tmp/flameshot";
++}
++
+diff --git a/src/utils/pathinfo.h b/src/utils/pathinfo.h
+index 02e015da..62ffa910 100644
+--- a/src/utils/pathinfo.h
++++ b/src/utils/pathinfo.h
+@@ -13,4 +13,6 @@ const QString blackIconPath();
+ 
+ QStringList translationsPaths();
+ 
++const char* tempDirectory();
++
+ } // namespace
+-- 
+2.42.0
+
